@@ -298,7 +298,7 @@ def test_resolve_before_move_out_reverts(
         c.resolve()
 
 
-def test_patchlock_second_resolve_reverts(
+def test_second_resolve_reverts(
     direct_vm, direct_deploy, direct_alice, direct_bob
 ):
     c = _deploy(direct_vm, direct_deploy, direct_alice, direct_bob)
@@ -322,7 +322,7 @@ def test_patchlock_second_resolve_reverts(
     assert after_pay["tenant_refund_wei"] == settlement["tenant_refund_wei"]
 
 
-def test_concord_get_settlement_equals_sum_of_triggered(
+def test_get_settlement_equals_sum_of_triggered(
     direct_vm, direct_deploy, direct_alice, direct_bob
 ):
     c = _deploy(direct_vm, direct_deploy, direct_alice, direct_bob)
@@ -343,7 +343,7 @@ def test_concord_get_settlement_equals_sum_of_triggered(
     assert "owner_payout_wei" not in c.get_case()
 
 
-def test_proofreader_invented_id_cannot_pay(
+def test_invented_id_cannot_pay(
     direct_vm, direct_deploy, direct_alice, direct_bob
 ):
     c = _deploy(direct_vm, direct_deploy, direct_alice, direct_bob)

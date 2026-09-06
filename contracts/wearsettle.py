@@ -16,7 +16,7 @@ from genlayer import *
 
 
 # ---------------------------------------------------------------------------
-# Caps (Ironclad — reject, never truncate)
+# Caps — reject, never truncate
 # ---------------------------------------------------------------------------
 MAX_INVENTORY_ITEMS = 8
 MIN_INVENTORY_ITEMS = 1
@@ -320,7 +320,7 @@ class WearSettle(gl.Contract):
         return [item_id for item_id in self.triggered_ids]
 
     def _recompute_payout(self) -> tuple:
-        """Single source of truth (Concord). Never trust a stored wei field."""
+        """Single source of truth. Never trust a stored wei field."""
         owner_payout = 0
         for item_id in self.triggered_ids:
             if item_id in self.inventory_charges:

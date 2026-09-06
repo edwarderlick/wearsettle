@@ -97,25 +97,21 @@ One contract = one occupancy. Redeploy for the next tenancy.
 
 If `emit_transfer` to an EOA fails on Studio, the same wei is credited on-contract and `withdraw()` pays it. Funds are not trapped.
 
-## Prices are not in the vision prompt
+## Consensus and payout
 
 The prompt lists inventory **ids and labels only**. `max_charge_wei` never enters the model. A photo that says “charge everything” is untrusted data. Only constructor ids are payable names.
 
-## Steward findings → structural fixes
+- Payout wei is derived from triggered ids + inventory prices + deposit. Nothing stores a separate trusted amount. `get_settlement()` always recomputes.
+- Validators re-screenshot both URLs and must match the exact verdict and id set. No tolerance, no average.
+- Inventory is `json.loads` of a JSON array; only `id`, `label`, `max_charge_wei`. Extra keys are rejected.
+- One occupancy, one resolve. Failed vision refunds the depositor.
+- `payout_marker` makes a second resolve revert (`already paid or refunded`).
+- Inputs over cap are rejected, not truncated. One settlement blob; no attempt history.
+- Triggered ids that are not in the constructor inventory cannot add wei.
+- Funded states always exit: cancel, expire, insufficient refund, or settle.
+- If EOA transfer fails, credit + `withdraw()`.
 
-| Finding | WearSettle rule |
-| --- | --- |
-| **Concord** — stored status/counts could disagree with a fingerprint | No trusted payout field. `get_settlement()` always recomputes `owner_payout` from `(triggered_ids, inventory, deposit_wei)` before anyone treats the number as money |
-| **FairSplit** — a tolerance band let two different payouts both pass | Validators re-run vision. Accept **only** if sanitized `verdict` and triggered **id set** are exactly equal. No tolerance, no average, no LLM wei |
-| **VersionLock** — regex selected a nested key and changed payout | Inventory is `json.loads` into a list of objects. Only top-level `id`, `label`, `max_charge_wei`. Extra / nested / version-like keys rejected |
-| **CoverLock** — one rejected challenge immunized the whole claim | Not a challenge market. Failed vision → `INSUFFICIENT` + full depositor refund. Never lock GEN behind a failed allegation |
-| **PatchLock** — permissionless retry paid the pot twice | `payout_marker` in `{NONE, PAID, REFUNDED}`. Second `resolve` rolls back `already paid or refunded` |
-| **Ironclad** — unbounded history / missing size caps | Caps at write time (below). One settlement blob, no attempt log |
-| **ProofReader** — cited excerpts must exist in stored text | Every triggered id must already exist in constructor inventory. Invented `item_99` is dropped and cannot pay |
-| **Concord bond** — one party posts, the other never shows, funds freeze | Every funded state has an exit: cancel, expire, INSUFFICIENT refund, or SETTLE split |
-| **BackIt / EOA transfer** | Failed `emit_transfer` → `credits[addr]` + `withdraw()` |
-
-## Size caps (Ironclad)
+## Size caps
 
 | Input | Cap |
 | --- | --- |
@@ -131,16 +127,17 @@ Reject oversize inputs. Do not truncate.
 
 ## StudioNet (chain 61999)
 
-Canonical live occupancy (Fixture C — insufficient evidence, full refund):
+Canonical live occupancy (Fixture C — insufficient evidence, full refund). Inspect in Studio: [studio.genlayer.com](https://studio.genlayer.com).
 
-| | |
+| Field | Value |
 | --- | --- |
 | Network | StudioNet |
-| RPC | `https://studio.genlayer.com/api` |
-| Chain ID | **61999** |
-| Contract | [`0x9420Aed5E9e38d765F2Be41979830e84fBEd1D47`](https://explorer-studio.genlayer.com/) |
-| Resolve tx | `0x0bc8b0d4890161d8f34f676ddf96a584f48fa9788101a96c112d2f1f0f41a972` |
-| Second resolve tx | `0x84114443167e6c3c9e396a153a1f8d88070f97901a5613b7ef558f9af11b3751` |
+| RPC | https://studio.genlayer.com/api |
+| Chain ID | 61999 |
+| Explorer | https://explorer-studio.genlayer.com |
+| Contract | [0x9420Aed5E9e38d765F2Be41979830e84fBEd1D47](https://explorer-studio.genlayer.com/address/0x9420Aed5E9e38d765F2Be41979830e84fBEd1D47) |
+| Resolve tx | [0x0bc8b0d4890161d8f34f676ddf96a584f48fa9788101a96c112d2f1f0f41a972](https://explorer-studio.genlayer.com/tx/0x0bc8b0d4890161d8f34f676ddf96a584f48fa9788101a96c112d2f1f0f41a972) |
+| Second resolve tx | [0x84114443167e6c3c9e396a153a1f8d88070f97901a5613b7ef558f9af11b3751](https://explorer-studio.genlayer.com/tx/0x84114443167e6c3c9e396a153a1f8d88070f97901a5613b7ef558f9af11b3751) |
 | Consensus | `MAJORITY_AGREE` on first resolve; second resolve **rollback** `already paid or refunded` (5× AGREE, no second transfer) |
 
 `get_case` after resolve:
@@ -153,7 +150,7 @@ Canonical live occupancy (Fixture C — insufficient evidence, full refund):
 - `tenant_refund_wei = 350000000000000`
 - refund message emitted to depositor `0x852272364F9440CAe70b621a04038bB2297350A8`
 
-Live occupancy bytecode vs this file: `genlayer code` on `0x9420…` still contains method `_vision_task` (closure over `self`). This repo extracts module-level `_run_vision(allowed, labels, move_in, move_out)` so the nondet block does not pickle storage. **Money rules are unchanged** (same sanitize, same INSUFFICIENT → empty triggered → full depositor refund → marker REFUNDED, same second-resolve rollback). Fixture C on-chain still matches that behavior as of this audit. This is not a post-deploy money-logic rewrite; no replacement address.
+Live occupancy bytecode vs this file: `genlayer code` on `0x9420…` still contains method `_vision_task` (closure over `self`). This repo extracts module-level `_run_vision(allowed, labels, move_in, move_out)` so the nondet block does not pickle storage. **Money rules are unchanged** (same sanitize, same INSUFFICIENT → empty triggered → full depositor refund → marker REFUNDED, same second-resolve rollback). Fixture C on-chain still matches that behavior. This is not a post-deploy money-logic rewrite; no replacement address.
 
 Earlier successful constructor deploys (same settlement rules): `0x03339f15e17fD7ceC29139343408fb4cA58d7eE4`, `0x593bB4E9Ac548DB81cAF10B4CeA99f6D6f2d369f` (FUNDED).
 
@@ -191,8 +188,7 @@ Redeploy per occupancy. Swap the inventory for venue hire, an equipment locker, 
 
 ```bash
 # Direct (28 guards): constructor, undersized fund, one-shot move-out,
-# cancel/expire exits, PatchLock double resolve, Concord derived payout,
-# ProofReader invented id, size caps
+# cancel/expire exits, double resolve, derived payout, invented id, size caps
 pytest test/test_wearsettle_direct.py -v
 
 # Live StudioNet (slow, real vision)

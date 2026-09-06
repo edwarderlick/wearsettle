@@ -1,6 +1,6 @@
 # WearSettle — agent runbook
 
-This folder is **WearSettle only**. Do not build a frontend. Do not git push unless the user asks (steward audit may push to `edwarderlick/wearsettle` when the go-list is green).
+This folder is **WearSettle only**. Do not build a frontend.
 
 ## What it is
 
@@ -12,7 +12,7 @@ A GenLayer deposit primitive: two public photos in, predetermined inventory out,
 - `test/test_wearsettle_direct.py` — in-memory guards
 - `test/test_wearsettle_integration.py` — StudioNet live consensus
 - `deploy/001_deploy_wearsettle.ts` — `genlayer deploy`
-- `AGENT_LOG.md` — decisions, failures, addresses
+- `AGENT_LOG.md` — APIs, fixture URLs, lint/test counts, StudioNet txs
 
 ## Commands
 
