@@ -1,0 +1,28 @@
+{
+  "network": "studionet",
+  "chainId": 61999,
+  "rpc": "https://studio.genlayer.com/api",
+  "canonical": {
+    "address": "0x9420Aed5E9e38d765F2Be41979830e84fBEd1D47",
+    "fixture": "C_insufficient_404",
+    "resolve_tx": "0x0bc8b0d4890161d8f34f676ddf96a584f48fa9788101a96c112d2f1f0f41a972",
+    "second_resolve_tx": "0x84114443167e6c3c9e396a153a1f8d88070f97901a5613b7ef558f9af11b3751",
+    "second_resolve_rollback": "already paid or refunded",
+    "verdict": "INSUFFICIENT",
+    "payout_marker": "REFUNDED",
+    "status": "SETTLED",
+    "owner_payout_wei": 0,
+    "tenant_refund_wei": 350000000000000,
+    "deposit_wei": 350000000000000
+  },
+  "other_deploys": [
+    {
+      "address": "0x03339f15e17fD7ceC29139343408fb4cA58d7eE4",
+      "note": "constructor + schema + get_case live; AWAITING_DEPOSIT"
+    },
+    {
+      "address": "0x593bB4E9Ac548DB81cAF10B4CeA99f6D6f2d369f",
+      "note": "FUNDED (fund_deposit landed; receipt poll hit Studio 502)"
+    }
+  ]
+}

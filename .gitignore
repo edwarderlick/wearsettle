@@ -1,0 +1,16 @@
+.env
+.env.*
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.gltest_cache/
+.gltest_artifacts/
+artifacts/
+node_modules/
+*.compiled.js
+.DS_Store
+*.egg-info/
+.idea/
+.vscode/

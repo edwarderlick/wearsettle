@@ -1,0 +1,12 @@
+{
+  "name": "wearsettle",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "genlayer deploy",
+    "lint": "genvm-lint check contracts/wearsettle.py"
+  },
+  "devDependencies": {
+    "genlayer-js": "^1.1.8"
+  }
+}
