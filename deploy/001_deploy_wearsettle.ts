@@ -40,6 +40,9 @@ export default async function main(client: GenLayerClient<any>) {
     "0x441a6da5d7d61d6f289c024196963da6f5da010a";
   const moveIn = process.env.WEARSETTLE_MOVE_IN || MOVE_IN;
   const deadline = Number(process.env.WEARSETTLE_DEADLINE || DEADLINE);
+  const resolveDeadline = Number(
+    process.env.WEARSETTLE_RESOLVE_DEADLINE || DEADLINE,
+  );
   const inventory = process.env.WEARSETTLE_INVENTORY || INVENTORY;
   const skipResolve = process.env.WEARSETTLE_SKIP_RESOLVE === "1";
 
@@ -49,7 +52,7 @@ export default async function main(client: GenLayerClient<any>) {
 
   const deployHash = await client.deployContract({
     code,
-    args: [tenant, moveIn, deadline, inventory],
+    args: [tenant, moveIn, deadline, resolveDeadline, inventory],
   });
   const deployTx = await waitTx(client, deployHash, 80);
   if (!isSuccessful(deployTx)) {

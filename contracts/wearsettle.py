@@ -241,6 +241,8 @@ class WearSettle(gl.Contract):
     deploy_ts: u256
     move_out_deadline_seconds: u256
     deadline_ts: u256
+    resolve_deadline_seconds: u256
+    resolve_deadline_ts: u256
     payout_marker: str
     verdict: str
     inventory_ids: DynArray[str]
@@ -254,6 +256,7 @@ class WearSettle(gl.Contract):
         tenant: Address,
         move_in_url: str,
         move_out_deadline_seconds: int,
+        resolve_deadline_seconds: int,
         inventory_json: str,
     ):
         owner = gl.message.sender_address
@@ -271,6 +274,13 @@ class WearSettle(gl.Contract):
             or move_out_deadline_seconds > MAX_DEADLINE_SECONDS
         ):
             raise gl.vm.UserError("move_out_deadline_seconds must be 60-2592000")
+        if (
+            not isinstance(resolve_deadline_seconds, int)
+            or type(resolve_deadline_seconds) is bool
+            or resolve_deadline_seconds < MIN_DEADLINE_SECONDS
+            or resolve_deadline_seconds > MAX_DEADLINE_SECONDS
+        ):
+            raise gl.vm.UserError("resolve_deadline_seconds must be 60-2592000")
 
         items = _parse_inventory(inventory_json)
         total = 0
@@ -292,6 +302,10 @@ class WearSettle(gl.Contract):
         self.deploy_ts = u256(now)
         self.move_out_deadline_seconds = u256(move_out_deadline_seconds)
         self.deadline_ts = u256(now + move_out_deadline_seconds)
+        self.resolve_deadline_seconds = u256(resolve_deadline_seconds)
+        self.resolve_deadline_ts = u256(
+            now + move_out_deadline_seconds + resolve_deadline_seconds
+        )
         self.payout_marker = MARKER_NONE
         self.verdict = ""
 
@@ -367,8 +381,8 @@ class WearSettle(gl.Contract):
     @gl.public.write
     def submit_move_out(self, move_out_url: str) -> None:
         sender = gl.message.sender_address
-        if sender != self.owner and sender != self.tenant:
-            raise gl.vm.UserError("only owner or tenant")
+        if sender != self.owner:
+            raise gl.vm.UserError("only owner may submit move out evidence")
         if self.move_out_url != "":
             raise gl.vm.UserError("move-out already submitted")
         if self.status != STATUS_FUNDED:
@@ -396,12 +410,17 @@ class WearSettle(gl.Contract):
 
     @gl.public.write
     def expire(self) -> None:
-        if self.status != STATUS_FUNDED:
-            raise gl.vm.UserError("expire requires FUNDED")
-        if self.move_out_url != "":
-            raise gl.vm.UserError("move-out already submitted")
-        if _now_ts() <= int(self.deadline_ts):
-            raise gl.vm.UserError("deadline not reached")
+        if self.status not in (STATUS_FUNDED, STATUS_MOVEOUT_SUBMITTED):
+            raise gl.vm.UserError("expire requires FUNDED or MOVEOUT_SUBMITTED")
+        now = _now_ts()
+        if self.status == STATUS_FUNDED:
+            if self.move_out_url != "":
+                raise gl.vm.UserError("move-out already submitted")
+            if now <= int(self.deadline_ts):
+                raise gl.vm.UserError("move out deadline not reached")
+        elif self.status == STATUS_MOVEOUT_SUBMITTED:
+            if now <= int(self.resolve_deadline_ts):
+                raise gl.vm.UserError("resolve deadline not reached")
         deposit = self.deposit_wei
         self.status = STATUS_EXPIRED
         self.payout_marker = MARKER_REFUNDED
@@ -503,6 +522,8 @@ class WearSettle(gl.Contract):
             "deadline": int(self.deadline_ts),
             "deploy_ts": int(self.deploy_ts),
             "move_out_deadline_seconds": int(self.move_out_deadline_seconds),
+            "resolve_deadline_seconds": int(self.resolve_deadline_seconds),
+            "resolve_deadline": int(self.resolve_deadline_ts),
             "inventory": self._structured_inventory(),
             "payout_marker": self.payout_marker,
         }

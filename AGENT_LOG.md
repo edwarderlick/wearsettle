@@ -22,7 +22,7 @@ StudioNet / test GEN. Deposit primitive: two public photos in, priced inventory 
 ## Lint / tests
 
 - `genvm-lint check contracts/wearsettle.py` — clean (10 methods: 4 view, 6 write).
-- `pytest test/test_wearsettle_direct.py -v` — 28 passed on Windows. Screenshot mocks in genlayer-test return empty PNG bytes; tests patch `wasi_mock._handle_web_render` with a real 2×2 PNG.
+- `pytest test/test_wearsettle_direct.py -v` — 30 passed on Windows after owner-only move-out + resolve-deadline expire. Screenshot mocks in genlayer-test return empty PNG bytes; tests patch `wasi_mock._handle_web_render` with a real 2×2 PNG.
 
 ## StudioNet occupancy (Fixture C)
 
@@ -30,6 +30,6 @@ StudioNet / test GEN. Deposit primitive: two public photos in, priced inventory 
 - Resolve: `0x0bc8b0d4890161d8f34f676ddf96a584f48fa9788101a96c112d2f1f0f41a972` — `INSUFFICIENT`, `SETTLED`, `REFUNDED`, full depositor refund `350000000000000`.
 - Second resolve: `0x84114443167e6c3c9e396a153a1f8d88070f97901a5613b7ef558f9af11b3751` — rollback `already paid or refunded`, no second transfer.
 
-Live bytecode still uses method `_vision_task`. This repo uses module-level `_run_vision(...)` so the nondet closure does not pickle storage. Settlement rules are the same; no replacement deploy.
+`0x9420…` predates owner-only `submit_move_out` and `expire` from `MOVEOUT_SUBMITTED` (resolve deadline). Current constructor takes `resolve_deadline_seconds`; `expire` refunds if resolve never lands. Redeploy to use that lifecycle.
 
 CLI notes: `genlayer write` (0.39.2) hardcodes `value: 0n`; payable `fund_deposit` needs genlayer-js / gltest `transact(value=…)`. Pass `inventory_json` as a string, not a parsed JSON array.

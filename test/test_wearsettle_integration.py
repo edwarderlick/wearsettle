@@ -65,7 +65,7 @@ def _local_schema():
 
 def _deploy(owner, tenant):
     factory = get_contract_factory("WearSettle")
-    args = [_addr(tenant), MOVE_IN, DEADLINE, INVENTORY_JSON]
+    args = [_addr(tenant), MOVE_IN, DEADLINE, DEADLINE, INVENTORY_JSON]
     try:
         return factory.deploy(args=args, account=owner)
     except ValueError:
@@ -111,7 +111,7 @@ def test_fixture_a_clean_return():
     fund_tx = _fund(contract, tenant, MAX_TOTAL)
     print("FIXTURE_A_FUND_TX", getattr(fund_tx, "id", fund_tx))
 
-    move_tx = _as(contract, tenant).submit_move_out(args=[MOVE_OUT_CLEAN]).transact(
+    move_tx = _as(contract, owner).submit_move_out(args=[MOVE_OUT_CLEAN]).transact(
         wait_retries=80,
         wait_interval=2000,
     )
@@ -172,7 +172,7 @@ def test_fixture_b_chargeable_or_honest_insufficient():
     print("FIXTURE_B_ADDRESS", contract.address)
 
     _fund(contract, tenant, MAX_TOTAL)
-    move_tx = _as(contract, tenant).submit_move_out(args=[MOVE_OUT_GLASS]).transact(
+    move_tx = _as(contract, owner).submit_move_out(args=[MOVE_OUT_GLASS]).transact(
         wait_retries=80,
         wait_interval=2000,
     )
@@ -229,7 +229,7 @@ def test_fixture_c_insufficient_404():
     print("FIXTURE_C_ADDRESS", contract.address)
 
     _fund(contract, tenant, MAX_TOTAL)
-    move_tx = _as(contract, tenant).submit_move_out(args=[MOVE_OUT_404]).transact(
+    move_tx = _as(contract, owner).submit_move_out(args=[MOVE_OUT_404]).transact(
         wait_retries=80,
         wait_interval=2000,
     )

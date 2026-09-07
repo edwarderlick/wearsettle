@@ -21,7 +21,7 @@ genvm-lint check contracts/wearsettle.py
 pytest test/test_wearsettle_direct.py -v
 gltest test/test_wearsettle_integration.py -v -s --network studionet
 genlayer network set studionet
-genlayer deploy --contract contracts/wearsettle.py --args "<tenant>" "https://upload.wikimedia.org/wikipedia/commons/1/15/Hotel_room.jpg" 2592000 "<inventory_json>"
+genlayer deploy --contract contracts/wearsettle.py --args "<tenant>" "https://upload.wikimedia.org/wikipedia/commons/1/15/Hotel_room.jpg" 2592000 2592000 "<inventory_json>"
 ```
 
 Constructor is **not** payable. After deploy, call `fund_deposit` with `value >= max_total_charge_wei`.

@@ -51,16 +51,17 @@ AWAITING_DEPOSIT
         │ fund_deposit (value ≥ max_total_charge_wei)
         ▼
      FUNDED ── cancel (owner) ──► CANCELLED (full refund if funded)
-        │ expire after deadline, no move-out
+        │ expire after move-out deadline, no move-out
         ▼
      EXPIRED (full refund)
         │
-        │ submit_move_out (owner or tenant, one shot)
+        │ submit_move_out (owner only, one shot)
         ▼
 MOVEOUT_SUBMITTED
         │ resolve (permissionless)
+        │ expire after resolve deadline if resolve never lands
         ▼
-     SETTLED
+     SETTLED  or  EXPIRED (full refund)
         ├── SETTLE + triggered ids → owner lines + depositor rest (marker PAID)
         ├── SETTLE + []           → full depositor refund         (marker PAID)
         └── INSUFFICIENT          → full depositor refund         (marker REFUNDED)
@@ -72,11 +73,11 @@ One contract = one occupancy. Redeploy for the next tenancy.
 
 | Method | Kind | Who | Notes |
 | --- | --- | --- | --- |
-| `__init__(tenant, move_in_url, deadline_s, inventory_json)` | constructor | deployer = owner | **Not payable.** HTTPS URL, 1–8 inventory items |
+| `__init__(tenant, move_in_url, move_out_deadline_s, resolve_deadline_s, inventory_json)` | constructor | deployer = owner | **Not payable.** HTTPS URL, 1–8 inventory items. Both deadlines 60–2,592,000 s |
 | `fund_deposit()` | write payable | anyone | First fund ≥ `max_total_charge_wei`. Later top-ups do not change `depositor` |
-| `submit_move_out(url)` | write | owner or tenant | FUNDED, before deadline, one shot |
+| `submit_move_out(url)` | write | owner | FUNDED, before move-out deadline, one shot. Owner bears proof of damage |
 | `cancel()` | write | owner | Before move-out. Refund if funded |
-| `expire()` | write | anyone | FUNDED, past deadline, no move-out URL |
+| `expire()` | write | anyone | FUNDED past move-out deadline with no URL, or MOVEOUT_SUBMITTED past resolve deadline. Full depositor refund |
 | `resolve()` | write | anyone | MOVEOUT_SUBMITTED, `payout_marker == NONE` |
 | `withdraw()` | write | credit holder | Pull if EOA `emit_transfer` failed |
 | `get_case()` | view | — | Parties, status, deposit, inventory, marker |
@@ -108,7 +109,8 @@ The prompt lists inventory **ids and labels only**. `max_charge_wei` never enter
 - `payout_marker` makes a second resolve revert (`already paid or refunded`).
 - Inputs over cap are rejected, not truncated. One settlement blob; no attempt history.
 - Triggered ids that are not in the constructor inventory cannot add wei.
-- Funded states always exit: cancel, expire, insufficient refund, or settle.
+- Funded states always exit: cancel, expire (FUNDED or MOVEOUT_SUBMITTED after the matching deadline), insufficient refund, or settle.
+- Only the owner may submit move-out evidence (burden of proof for chargeable lines).
 - If EOA transfer fails, credit + `withdraw()`.
 
 ## Size caps
@@ -150,7 +152,7 @@ Canonical live occupancy (Fixture C — insufficient evidence, full refund). Ins
 - `tenant_refund_wei = 350000000000000`
 - refund message emitted to depositor `0x852272364F9440CAe70b621a04038bB2297350A8`
 
-Live occupancy bytecode vs this file: `genlayer code` on `0x9420…` still contains method `_vision_task` (closure over `self`). This repo extracts module-level `_run_vision(allowed, labels, move_in, move_out)` so the nondet block does not pickle storage. **Money rules are unchanged** (same sanitize, same INSUFFICIENT → empty triggered → full depositor refund → marker REFUNDED, same second-resolve rollback). Fixture C on-chain still matches that behavior. This is not a post-deploy money-logic rewrite; no replacement address.
+The occupancy at `0x9420…` was deployed **before** owner-only move-out and the resolve-deadline expire path. This file is the current constructor (`resolve_deadline_seconds`) and those guards. Redeploy to use the new lifecycle. Fixture C on that address remains a historical INSUFFICIENT refund + second-resolve rollback.
 
 Earlier successful constructor deploys (same settlement rules): `0x03339f15e17fD7ceC29139343408fb4cA58d7eE4`, `0x593bB4E9Ac548DB81cAF10B4CeA99f6D6f2d369f` (FUNDED).
 
@@ -174,7 +176,7 @@ pytest test/test_wearsettle_direct.py -v
 gltest test/test_wearsettle_integration.py::test_fixture_c_insufficient_404 -v -s --network studionet
 
 genlayer network set studionet
-genlayer deploy --contract contracts/wearsettle.py --args <tenant> "<https-move-in>" 2592000 "<inventory json STRING>"
+genlayer deploy --contract contracts/wearsettle.py --args <tenant> "<https-move-in>" 2592000 2592000 "<inventory json STRING>"
 # then payable fund_deposit via genlayer-js / gltest (CLI write currently sends value=0)
 ```
 
@@ -187,7 +189,7 @@ Redeploy per occupancy. Swap the inventory for venue hire, an equipment locker, 
 ## Tests
 
 ```bash
-# Direct (28 guards): constructor, undersized fund, one-shot move-out,
+# Direct guards: constructor, undersized fund, one-shot owner move-out,
 # cancel/expire exits, double resolve, derived payout, invented id, size caps
 pytest test/test_wearsettle_direct.py -v
 
@@ -195,7 +197,7 @@ pytest test/test_wearsettle_direct.py -v
 gltest test/test_wearsettle_integration.py -v -s --network studionet
 ```
 
-Direct mode on this Windows box: **28 passed**. `genlayer-test` screenshot mocks return empty PNG bytes; tests patch `wasi_mock._handle_web_render` with a real 2×2 PNG so PIL can open the artifact. If `os.unlink` on an open handle appears in a future runner, treat Studio integration + lint as the network proof and keep these money assertions.
+Direct mode on this Windows box: **30 passed**. `genlayer-test` screenshot mocks return empty PNG bytes; tests patch `wasi_mock._handle_web_render` with a real 2×2 PNG so PIL can open the artifact. If `os.unlink` on an open handle appears in a future runner, treat Studio integration + lint as the network proof and keep these money assertions.
 
 ## Known limitations
 

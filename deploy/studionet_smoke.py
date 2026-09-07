@@ -62,7 +62,7 @@ def main() -> None:
     owner, tenant = accounts[0], accounts[1]
     factory = get_contract_factory("WearSettle")
     contract = factory.deploy(
-        args=[_addr(tenant), MOVE_IN, 2_592_000, INVENTORY_JSON],
+        args=[_addr(tenant), MOVE_IN, 2_592_000, 2_592_000, INVENTORY_JSON],
         account=owner,
     )
     print("DEPLOY_ADDRESS", contract.address)
@@ -78,7 +78,7 @@ def main() -> None:
         raise SystemExit("fund_deposit failed")
 
     move_tx = contract.submit_move_out(args=[MOVE_OUT_404]).transact(
-        account=tenant,
+        account=owner,
         wait_retries=80,
         wait_interval=2000,
     )

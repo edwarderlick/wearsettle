@@ -66,10 +66,13 @@ def _deploy(
     tenant,
     url=MOVE_IN,
     deadline=3600,
+    resolve_deadline=3600,
     inventory=None,
 ):
     direct_vm.sender = owner
-    return direct_deploy(CONTRACT, tenant, url, deadline, _inv(inventory))
+    return direct_deploy(
+        CONTRACT, tenant, url, deadline, resolve_deadline, _inv(inventory)
+    )
 
 
 def _fund(direct_vm, contract, funder, amount):
@@ -90,7 +93,7 @@ def test_constructor_rejects_owner_equals_tenant(
 ):
     direct_vm.sender = direct_alice
     with direct_vm.expect_revert("tenant cannot equal owner"):
-        direct_deploy(CONTRACT, direct_alice, MOVE_IN, 3600, _inv())
+        direct_deploy(CONTRACT, direct_alice, MOVE_IN, 3600, 3600, _inv())
 
 
 def test_constructor_rejects_empty_inventory(
@@ -98,7 +101,7 @@ def test_constructor_rejects_empty_inventory(
 ):
     direct_vm.sender = direct_alice
     with direct_vm.expect_revert("inventory must contain 1 to 8 items"):
-        direct_deploy(CONTRACT, direct_bob, MOVE_IN, 3600, "[]")
+        direct_deploy(CONTRACT, direct_bob, MOVE_IN, 3600, 3600, "[]")
 
 
 def test_constructor_rejects_nine_items(
@@ -110,7 +113,7 @@ def test_constructor_rejects_nine_items(
     ]
     direct_vm.sender = direct_alice
     with direct_vm.expect_revert("inventory must contain 1 to 8 items"):
-        direct_deploy(CONTRACT, direct_bob, MOVE_IN, 3600, _inv(items))
+        direct_deploy(CONTRACT, direct_bob, MOVE_IN, 3600, 3600, _inv(items))
 
 
 def test_constructor_rejects_duplicate_ids(
@@ -122,7 +125,7 @@ def test_constructor_rejects_duplicate_ids(
     ]
     direct_vm.sender = direct_alice
     with direct_vm.expect_revert("duplicate inventory id"):
-        direct_deploy(CONTRACT, direct_bob, MOVE_IN, 3600, _inv(items))
+        direct_deploy(CONTRACT, direct_bob, MOVE_IN, 3600, 3600, _inv(items))
 
 
 def test_constructor_rejects_non_https(
@@ -130,7 +133,7 @@ def test_constructor_rejects_non_https(
 ):
     direct_vm.sender = direct_alice
     with direct_vm.expect_revert("move_in_url must be https"):
-        direct_deploy(CONTRACT, direct_bob, "http://example.com/x", 3600, _inv())
+        direct_deploy(CONTRACT, direct_bob, "http://example.com/x", 3600, 3600, _inv())
 
 
 def test_constructor_rejects_non_json(
@@ -138,7 +141,7 @@ def test_constructor_rejects_non_json(
 ):
     direct_vm.sender = direct_alice
     with direct_vm.expect_revert("inventory_json is not valid JSON"):
-        direct_deploy(CONTRACT, direct_bob, MOVE_IN, 3600, "not-json")
+        direct_deploy(CONTRACT, direct_bob, MOVE_IN, 3600, 3600, "not-json")
 
 
 def test_constructor_rejects_nested_version_bait(
@@ -154,7 +157,7 @@ def test_constructor_rejects_nested_version_bait(
     ]
     direct_vm.sender = direct_alice
     with direct_vm.expect_revert("extra money-bearing or nested bait keys"):
-        direct_deploy(CONTRACT, direct_bob, MOVE_IN, 3600, _inv(items))
+        direct_deploy(CONTRACT, direct_bob, MOVE_IN, 3600, 3600, _inv(items))
 
 
 def test_constructor_rejects_missing_max_charge(
@@ -163,7 +166,7 @@ def test_constructor_rejects_missing_max_charge(
     items = [{"id": "wall_scuff", "label": "Wall"}]
     direct_vm.sender = direct_alice
     with direct_vm.expect_revert("missing id, label, or max_charge_wei"):
-        direct_deploy(CONTRACT, direct_bob, MOVE_IN, 3600, json.dumps(items))
+        direct_deploy(CONTRACT, direct_bob, MOVE_IN, 3600, 3600, json.dumps(items))
 
 
 def test_constructor_rejects_empty_label(
@@ -172,7 +175,7 @@ def test_constructor_rejects_empty_label(
     items = [{"id": "wall_scuff", "label": "", "max_charge_wei": 1}]
     direct_vm.sender = direct_alice
     with direct_vm.expect_revert("inventory label length invalid"):
-        direct_deploy(CONTRACT, direct_bob, MOVE_IN, 3600, _inv(items))
+        direct_deploy(CONTRACT, direct_bob, MOVE_IN, 3600, 3600, _inv(items))
 
 
 def test_constructor_rejects_257_char_url(
@@ -182,7 +185,7 @@ def test_constructor_rejects_257_char_url(
     assert len(url) == 257
     direct_vm.sender = direct_alice
     with direct_vm.expect_revert("move_in_url must be https"):
-        direct_deploy(CONTRACT, direct_bob, url, 3600, _inv())
+        direct_deploy(CONTRACT, direct_bob, url, 3600, 3600, _inv())
 
 
 def test_fund_undersized_reverts(
@@ -222,16 +225,26 @@ def test_submit_move_out_stranger_reverts(
     c = _deploy(direct_vm, direct_deploy, direct_alice, direct_bob)
     _fund(direct_vm, c, direct_bob, MAX_TOTAL)
     direct_vm.sender = direct_charlie
-    with direct_vm.expect_revert("only owner or tenant"):
+    with direct_vm.expect_revert("only owner may submit move out evidence"):
         c.submit_move_out(MOVE_OUT)
 
 
-def test_submit_move_out_once_from_tenant(
+def test_submit_move_out_tenant_reverts(
     direct_vm, direct_deploy, direct_alice, direct_bob
 ):
     c = _deploy(direct_vm, direct_deploy, direct_alice, direct_bob)
     _fund(direct_vm, c, direct_bob, MAX_TOTAL)
     direct_vm.sender = direct_bob
+    with direct_vm.expect_revert("only owner may submit move out evidence"):
+        c.submit_move_out(MOVE_OUT)
+
+
+def test_submit_move_out_once_from_owner(
+    direct_vm, direct_deploy, direct_alice, direct_bob
+):
+    c = _deploy(direct_vm, direct_deploy, direct_alice, direct_bob)
+    _fund(direct_vm, c, direct_bob, MAX_TOTAL)
+    direct_vm.sender = direct_alice
     c.submit_move_out(MOVE_OUT)
     assert c.get_case()["status"] == "MOVEOUT_SUBMITTED"
     with direct_vm.expect_revert("move-out already submitted"):
@@ -243,7 +256,7 @@ def test_cancel_after_move_out_reverts(
 ):
     c = _deploy(direct_vm, direct_deploy, direct_alice, direct_bob)
     _fund(direct_vm, c, direct_bob, MAX_TOTAL)
-    direct_vm.sender = direct_bob
+    direct_vm.sender = direct_alice
     c.submit_move_out(MOVE_OUT)
     direct_vm.sender = direct_alice
     with direct_vm.expect_revert("cannot cancel"):
@@ -272,7 +285,7 @@ def test_expire_before_deadline_reverts(
     c = _deploy(direct_vm, direct_deploy, direct_alice, direct_bob, deadline=120)
     _fund(direct_vm, c, direct_bob, MAX_TOTAL)
     direct_vm.warp("2026-01-01T00:01:00+00:00")
-    with direct_vm.expect_revert("deadline not reached"):
+    with direct_vm.expect_revert("move out deadline not reached"):
         c.expire()
 
 
@@ -283,6 +296,31 @@ def test_expire_after_deadline_refunds(
     c = _deploy(direct_vm, direct_deploy, direct_alice, direct_bob, deadline=60)
     _fund(direct_vm, c, direct_bob, MAX_TOTAL)
     direct_vm.warp("2026-01-01T00:02:00+00:00")
+    c.expire()
+    case = c.get_case()
+    assert case["status"] == "EXPIRED"
+    assert case["payout_marker"] == "REFUNDED"
+
+
+def test_expire_after_resolve_deadline_from_moveout(
+    direct_vm, direct_deploy, direct_alice, direct_bob
+):
+    direct_vm.warp("2026-01-01T00:00:00+00:00")
+    c = _deploy(
+        direct_vm,
+        direct_deploy,
+        direct_alice,
+        direct_bob,
+        deadline=60,
+        resolve_deadline=60,
+    )
+    _fund(direct_vm, c, direct_bob, MAX_TOTAL)
+    direct_vm.sender = direct_alice
+    c.submit_move_out(MOVE_OUT)
+    direct_vm.warp("2026-01-01T00:01:30+00:00")
+    with direct_vm.expect_revert("resolve deadline not reached"):
+        c.expire()
+    direct_vm.warp("2026-01-01T00:03:00+00:00")
     c.expire()
     case = c.get_case()
     assert case["status"] == "EXPIRED"
@@ -303,7 +341,7 @@ def test_second_resolve_reverts(
 ):
     c = _deploy(direct_vm, direct_deploy, direct_alice, direct_bob)
     _fund(direct_vm, c, direct_bob, MAX_TOTAL)
-    direct_vm.sender = direct_bob
+    direct_vm.sender = direct_alice
     c.submit_move_out(MOVE_OUT)
     _mock_vision(direct_vm, {"verdict": "SETTLE", "triggered": ["broken_glass"]})
     c.resolve()
@@ -327,7 +365,7 @@ def test_get_settlement_equals_sum_of_triggered(
 ):
     c = _deploy(direct_vm, direct_deploy, direct_alice, direct_bob)
     _fund(direct_vm, c, direct_bob, MAX_TOTAL)
-    direct_vm.sender = direct_bob
+    direct_vm.sender = direct_alice
     c.submit_move_out(MOVE_OUT)
     _mock_vision(
         direct_vm,
@@ -348,7 +386,7 @@ def test_invented_id_cannot_pay(
 ):
     c = _deploy(direct_vm, direct_deploy, direct_alice, direct_bob)
     _fund(direct_vm, c, direct_bob, MAX_TOTAL)
-    direct_vm.sender = direct_bob
+    direct_vm.sender = direct_alice
     c.submit_move_out(MOVE_OUT)
     _mock_vision(
         direct_vm,
@@ -369,7 +407,7 @@ def test_settle_empty_triggered_is_full_refund_paid(
 ):
     c = _deploy(direct_vm, direct_deploy, direct_alice, direct_bob)
     _fund(direct_vm, c, direct_bob, MAX_TOTAL)
-    direct_vm.sender = direct_bob
+    direct_vm.sender = direct_alice
     c.submit_move_out(MOVE_OUT)
     _mock_vision(direct_vm, {"verdict": "SETTLE", "triggered": []})
     c.resolve()
@@ -386,7 +424,7 @@ def test_insufficient_refunds_depositor(
 ):
     c = _deploy(direct_vm, direct_deploy, direct_alice, direct_bob)
     _fund(direct_vm, c, direct_bob, MAX_TOTAL)
-    direct_vm.sender = direct_bob
+    direct_vm.sender = direct_alice
     c.submit_move_out(MOVE_OUT)
     _mock_vision(
         direct_vm,
