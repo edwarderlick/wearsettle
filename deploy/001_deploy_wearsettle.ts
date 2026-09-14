@@ -46,16 +46,37 @@ export default async function main(client: GenLayerClient<any>) {
   const inventory = process.env.WEARSETTLE_INVENTORY || INVENTORY;
   const skipResolve = process.env.WEARSETTLE_SKIP_RESOLVE === "1";
 
-  const code = new Uint8Array(
-    readFileSync(new URL("../contracts/wearsettle.py", import.meta.url)),
-  );
+  // genlayer deploy compiles the TS to a tmp dir; resolve back to project root
+  const projectRoot = process.env.WEARSETTLE_PROJECT_ROOT ||
+    new URL("../", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1").replace(/\//g, "\\");
+  const contractFile = `${projectRoot}contracts\\wearsettle.py`;
+  const code = new Uint8Array(readFileSync(contractFile));
+
+  const { CalldataAddress } = await import("genlayer-js/types");
+  const tenantBytes = new Uint8Array(20);
+  const tHex = tenant.startsWith("0x") ? tenant.slice(2) : tenant;
+  for (let i = 0; i < 20; i++) tenantBytes[i] = parseInt(tHex.slice(i*2, i*2+2), 16);
+  const tenantArg = new CalldataAddress(tenantBytes);
 
   const deployHash = await client.deployContract({
     code,
-    args: [tenant, moveIn, deadline, resolveDeadline, inventory],
+    args: [tenantArg, moveIn, deadline, resolveDeadline, inventory],
+    fees: {
+      feeValue: "100000000000000000",
+      distribution: {
+        leaderTimeunitsAllocation: "600",
+        validatorTimeunitsAllocation: "600",
+        rotations: ["0"],
+        executionBudgetPerRound: "10000000000000000",
+        maxPriceGenPerTimeUnit: "10",
+        storageFeeMaxGasPrice: "1000000000",
+        receiptFeeMaxGasPrice: "1000000000",
+      },
+    },
   });
   const deployTx = await waitTx(client, deployHash, 80);
   if (!isSuccessful(deployTx)) {
+    console.error("Deploy failed. Tx:", JSON.stringify(deployTx, null, 2));
     throw new Error(
       `WearSettle deploy failed: ${deployTx.statusName} / ${deployTx.txExecutionResultName}`,
     );
@@ -67,11 +88,25 @@ export default async function main(client: GenLayerClient<any>) {
   }
   console.log("DEPLOYED", { deployHash, contractAddress });
 
+  const feesConfig = {
+    feeValue: "100000000000000000",
+    distribution: {
+      leaderTimeunitsAllocation: "600",
+      validatorTimeunitsAllocation: "600",
+      rotations: ["0"],
+      executionBudgetPerRound: "10000000000000000",
+      maxPriceGenPerTimeUnit: "10",
+      storageFeeMaxGasPrice: "1000000000",
+      receiptFeeMaxGasPrice: "1000000000",
+    },
+  };
+
   const fundHash = await client.writeContract({
     address: contractAddress,
     functionName: "fund_deposit",
     args: [],
     value: MAX_TOTAL,
+    fees: feesConfig,
   });
   const fundTx = await waitTx(client, fundHash, 80);
   console.log("FUNDED", { fundHash, ok: isSuccessful(fundTx) });
@@ -80,6 +115,7 @@ export default async function main(client: GenLayerClient<any>) {
     address: contractAddress,
     functionName: "submit_move_out",
     args: [process.env.WEARSETTLE_MOVE_OUT || MOVE_OUT_404],
+    fees: feesConfig,
   });
   const moveTx = await waitTx(client, moveHash, 80);
   console.log("MOVEOUT", { moveHash, ok: isSuccessful(moveTx) });
@@ -94,8 +130,10 @@ export default async function main(client: GenLayerClient<any>) {
       address: contractAddress,
       functionName: "resolve",
       args: [],
+      fees: feesConfig,
     });
     const resolveTx = await waitTx(client, resolveHash, 180);
+    console.log("RESOLVE_TX_FULL", JSON.stringify(resolveTx, null, 2));
     console.log("RESOLVE", {
       resolveHash,
       ok: isSuccessful(resolveTx),
@@ -121,6 +159,7 @@ export default async function main(client: GenLayerClient<any>) {
         address: contractAddress,
         functionName: "resolve",
         args: [],
+        fees: feesConfig,
       });
       const secondTx = await waitTx(client, secondHash, 40);
       console.log("SECOND_RESOLVE", {
@@ -135,8 +174,8 @@ export default async function main(client: GenLayerClient<any>) {
   }
 
   const record = {
-    network: "studionet",
-    chainId: 61999,
+    network: "studio-dev",
+    chainId: 61997,
     contractAddress,
     deployHash,
     fundHash,

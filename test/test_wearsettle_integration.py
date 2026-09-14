@@ -66,10 +66,24 @@ def _local_schema():
 def _deploy(owner, tenant):
     factory = get_contract_factory("WearSettle")
     args = [_addr(tenant), MOVE_IN, DEADLINE, DEADLINE, INVENTORY_JSON]
+    
+    fees = {
+        "distribution": {
+            "leaderTimeunitsAllocation": "100",
+            "validatorTimeunitsAllocation": "200",
+            "rotations": ["0"],
+            "executionBudgetPerRound": "76548000000000",
+            "maxPriceGenPerTimeUnit": "2",
+            "storageFeeMaxGasPrice": "300000000",
+            "receiptFeeMaxGasPrice": "300000000"
+        }
+    }
+    fee_value = 76548000002588
+    
     try:
-        return factory.deploy(args=args, account=owner)
+        return factory.deploy(args=args, account=owner, fees=fees, fee_value=fee_value)
     except ValueError:
-        receipt = factory.deploy_contract_tx(args=args, account=owner)
+        receipt = factory.deploy_contract_tx(args=args, account=owner, fees=fees, fee_value=fee_value)
         assert tx_execution_succeeded(receipt)
         address = extract_contract_address(receipt)
         return Contract.new(address=address, schema=_local_schema(), account=owner)

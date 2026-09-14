@@ -7,6 +7,6 @@
     "lint": "genvm-lint check contracts/wearsettle.py"
   },
   "devDependencies": {
-    "genlayer-js": "^1.1.8"
+    "genlayer-js": "^2.0.0-rc.1"
   }
 }

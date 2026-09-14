@@ -1,4 +1,4 @@
-# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
+# { "Depends": "py-genlayer:5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng" }
 
 """WearSettle — predetermined-line visual deposit settlement primitive.
 
@@ -13,6 +13,9 @@ import re
 from datetime import datetime, timezone
 
 from genlayer import *
+import genlayer as gl
+from genlayer.storage import *
+from genlayer.nondet import exec_prompt, web
 
 
 # ---------------------------------------------------------------------------
@@ -63,7 +66,7 @@ VERDICT_INSUFFICIENT = "INSUFFICIENT"
 ZERO = Address("0x0000000000000000000000000000000000000000")
 
 
-@gl.evm.contract_interface
+@gl.contract.interface
 class _Recipient:
     class View:
         pass
@@ -180,8 +183,8 @@ def _sanitize_vision(raw, allowed_ids: list) -> dict:
 
 def _run_vision(allowed: list, labels: dict, move_in: str, move_out: str) -> dict:
     try:
-        in_img = gl.nondet.web.render(move_in, mode="screenshot")
-        out_img = gl.nondet.web.render(move_out, mode="screenshot")
+        in_img = web.render(move_in, mode="screenshot")
+        out_img = web.render(move_out, mode="screenshot")
     except Exception:
         return {"verdict": VERDICT_INSUFFICIENT, "triggered": []}
 
@@ -210,7 +213,7 @@ def _run_vision(allowed: list, labels: dict, move_in: str, move_out: str) -> dic
         "triggered is a list of inventory ids that are chargeable.\n"
     )
     try:
-        raw = gl.nondet.exec_prompt(
+        raw = exec_prompt(
             prompt,
             images=[in_img, out_img],
             response_format="json",
@@ -229,7 +232,7 @@ def _inventory_prompt_lines(ids: list, labels: dict) -> str:
     return "\n".join(lines)
 
 
-class WearSettle(gl.Contract):
+class WearSettle(gl.contract.Contract):
     owner: Address
     tenant: Address
     depositor: Address
@@ -268,14 +271,14 @@ class WearSettle(gl.Contract):
         if not _is_https_url(move_in_url):
             raise gl.vm.UserError("move_in_url must be https and 12-256 chars")
         if (
-            not isinstance(move_out_deadline_seconds, int)
+            type(move_out_deadline_seconds) not in (int, type(u256(0)))
             or type(move_out_deadline_seconds) is bool
             or move_out_deadline_seconds < MIN_DEADLINE_SECONDS
             or move_out_deadline_seconds > MAX_DEADLINE_SECONDS
         ):
             raise gl.vm.UserError("move_out_deadline_seconds must be 60-2592000")
         if (
-            not isinstance(resolve_deadline_seconds, int)
+            type(resolve_deadline_seconds) not in (int, type(u256(0)))
             or type(resolve_deadline_seconds) is bool
             or resolve_deadline_seconds < MIN_DEADLINE_SECONDS
             or resolve_deadline_seconds > MAX_DEADLINE_SECONDS
@@ -433,6 +436,8 @@ class WearSettle(gl.Contract):
             raise gl.vm.UserError("already paid or refunded")
         if self.status != STATUS_MOVEOUT_SUBMITTED:
             raise gl.vm.UserError("resolve requires MOVEOUT_SUBMITTED")
+        if _now_ts() > int(self.resolve_deadline_ts):
+            raise gl.vm.UserError("resolve deadline passed")
         if not _is_https_url(self.move_in_url) or not _is_https_url(self.move_out_url):
             raise gl.vm.UserError("both evidence URLs must be https")
         if len(self.inventory_ids) < 1:
@@ -457,7 +462,7 @@ class WearSettle(gl.Contract):
                 return False
             return True
 
-        result = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
+        result = gl.vm.run_nondet(leader_fn, validator_fn)
         outcome = _sanitize_vision(result, allowed)
 
         self.verdict = outcome["verdict"]

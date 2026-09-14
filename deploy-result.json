@@ -1,28 +1,51 @@
 {
-  "network": "studionet",
-  "chainId": 61999,
-  "rpc": "https://studio.genlayer.com/api",
-  "canonical": {
-    "address": "0x9420Aed5E9e38d765F2Be41979830e84fBEd1D47",
-    "fixture": "C_insufficient_404",
-    "resolve_tx": "0x0bc8b0d4890161d8f34f676ddf96a584f48fa9788101a96c112d2f1f0f41a972",
-    "second_resolve_tx": "0x84114443167e6c3c9e396a153a1f8d88070f97901a5613b7ef558f9af11b3751",
-    "second_resolve_rollback": "already paid or refunded",
-    "verdict": "INSUFFICIENT",
-    "payout_marker": "REFUNDED",
-    "status": "SETTLED",
+  "network": "studio-dev",
+  "chainId": 61997,
+  "contractAddress": "0x86034B3290a9e3bAC0650B6A1BC5289e8a3E63d6",
+  "deployHash": "0xbc2099db4bad0468e6b811a1c4697b92d6cc80dca173fedd0bce3414d456775d",
+  "fundHash": "0x8c97149e51c963407b74d4a4e69b1834f95654a3ce6a20737b07d00df3217f7d",
+  "moveHash": "0x448346ba3fff43cec21b9cbe9e2a18370759301b873d201ca526089a74a59a2c",
+  "resolveHash": "0xceba32d81ee5be0ab692d24aff849dbe63cfbdd8ace023b865bc5546fe5ba4a4",
+  "secondHash": "0x1a325f21b9694180f9b2ca4c77a2420462e162e22c6c09fc20a0d4d3eb418762",
+  "tenant": "0x441a6da5d7d61d6f289c024196963da6f5da010a",
+  "moveIn": "https://upload.wikimedia.org/wikipedia/commons/1/15/Hotel_room.jpg",
+  "caseAfter": {
+    "deadline": 1791999847,
+    "deploy_ts": 1789407847,
+    "deposit_wei": 350000000000000,
+    "depositor": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "inventory": [
+      {
+        "id": "wall_scuff",
+        "label": "Wall scuff or hole",
+        "max_charge_wei": 100000000000000
+      },
+      {
+        "id": "missing_remote",
+        "label": "TV remote present",
+        "max_charge_wei": 50000000000000
+      },
+      {
+        "id": "broken_glass",
+        "label": "Window or glass pane intact",
+        "max_charge_wei": 200000000000000
+      }
+    ],
+    "max_total_charge_wei": 350000000000000,
+    "move_in_url": "https://upload.wikimedia.org/wikipedia/commons/1/15/Hotel_room.jpg",
+    "move_out_deadline_seconds": 2592000,
+    "move_out_url": "https://upload.wikimedia.org/wikipedia/commons/does-not-exist-wearsettle-404.jpg",
+    "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "payout_marker": "NONE",
+    "resolve_deadline": 1794591847,
+    "resolve_deadline_seconds": 2592000,
+    "status": "MOVEOUT_SUBMITTED",
+    "tenant": "0x441a6Da5D7D61D6F289c024196963da6f5da010a"
+  },
+  "settlement": {
     "owner_payout_wei": 0,
     "tenant_refund_wei": 350000000000000,
-    "deposit_wei": 350000000000000
-  },
-  "other_deploys": [
-    {
-      "address": "0x03339f15e17fD7ceC29139343408fb4cA58d7eE4",
-      "note": "constructor + schema + get_case live; AWAITING_DEPOSIT"
-    },
-    {
-      "address": "0x593bB4E9Ac548DB81cAF10B4CeA99f6D6f2d369f",
-      "note": "FUNDED (fund_deposit landed; receipt poll hit Studio 502)"
-    }
-  ]
+    "triggered_ids": [],
+    "verdict": ""
+  }
 }

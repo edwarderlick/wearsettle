@@ -15,6 +15,8 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 os.chdir(ROOT)
 
@@ -58,9 +60,11 @@ def _txid(receipt) -> str:
 
 
 def main() -> None:
-    accounts = get_accounts()
-    owner, tenant = accounts[0], accounts[1]
-    factory = get_contract_factory("WearSettle")
+    import os
+    from eth_account import Account
+    owner = Account.from_key(os.environ["GL_PRIVATE_KEY_COVERLOCK_SUBMITTER"])
+    tenant = Account.from_key(os.environ["GL_PRIVATE_KEY_CONCORD_BOB"])
+    factory = get_contract_factory(contract_file_path="contracts/wearsettle.py")
     contract = factory.deploy(
         args=[_addr(tenant), MOVE_IN, 2_592_000, 2_592_000, INVENTORY_JSON],
         account=owner,
@@ -112,8 +116,8 @@ def main() -> None:
     )
 
     record = {
-        "network": "studionet",
-        "chainId": 61999,
+        "network": "studio-dev",
+        "chainId": 61997,
         "address": str(contract.address),
         "fund_tx": _txid(fund_tx),
         "moveout_tx": _txid(move_tx),

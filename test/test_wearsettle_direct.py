@@ -84,6 +84,13 @@ def _fund(direct_vm, contract, funder, amount):
 
 def _mock_vision(direct_vm, payload: dict):
     wasi_mock._handle_web_render = _png_web_render
+    
+    def _patched_llm_request(vm, data):
+        prompt = data.get("prompt", "")
+        response = vm._match_llm_mock(prompt)
+        return {"ok": response}
+    wasi_mock._handle_llm_request = _patched_llm_request
+
     direct_vm.mock_web(r".*", {"status": 200, "body": _PNG})
     direct_vm.mock_llm(r".*", json.dumps(payload))
 
@@ -466,3 +473,23 @@ def test_cancel_unfunded(
     case = c.get_case()
     assert case["status"] == "CANCELLED"
     assert case["payout_marker"] == "NONE"
+
+
+def test_resolve_after_deadline_fails(
+    direct_vm, direct_deploy, direct_alice, direct_bob
+):
+    direct_vm.warp("2026-01-01T00:00:00+00:00")
+    c = _deploy(
+        direct_vm,
+        direct_deploy,
+        direct_alice,
+        direct_bob,
+        deadline=60,
+        resolve_deadline=60,
+    )
+    _fund(direct_vm, c, direct_bob, MAX_TOTAL)
+    direct_vm.sender = direct_alice
+    c.submit_move_out(MOVE_OUT)
+    direct_vm.warp("2026-01-01T00:03:00+00:00")
+    with direct_vm.expect_revert("resolve deadline passed"):
+        c.resolve()

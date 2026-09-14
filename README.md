@@ -127,9 +127,21 @@ The prompt lists inventory **ids and labels only**. `max_charge_wei` never enter
 
 Reject oversize inputs. Do not truncate.
 
-## StudioNet (chain 61999)
+## Studio-dev (chain 61997)
 
-Canonical live occupancy (Fixture C — insufficient evidence, full refund). Inspect in Studio: [studio.genlayer.com](https://studio.genlayer.com).
+Canonical live occupancy matching the updated source (constructor with `resolve_deadline_seconds`, inventory as JSON string, owner-only move-out, and timeout exit paths).
+
+| Field | Value |
+| --- | --- |
+| Network | Studio-dev |
+| RPC | https://studio-dev.genlayer.com/api |
+| Chain ID | 61997 |
+| Contract | `0x86034B3290a9e3bAC0650B6A1BC5289e8a3E63d6` |
+| Deploy tx | `0xbc2099db4bad0468e6b811a1c4697b92d6cc80dca173fedd0bce3414d456775d` |
+
+## StudioNet (chain 61999) - Legacy
+
+Legacy live occupancy (Fixture C — insufficient evidence, full refund). Inspect in Studio: [studio.genlayer.com](https://studio.genlayer.com).
 
 | Field | Value |
 | --- | --- |
