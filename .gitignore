@@ -14,3 +14,7 @@ node_modules/
 *.egg-info/
 .idea/
 .vscode/
+
+*.keystore
+*.log
+tx*.json

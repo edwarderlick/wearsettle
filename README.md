@@ -2,7 +2,7 @@
 
 A GenLayer deposit primitive: two public photos in, predetermined inventory out, deterministic wei.
 
-StudioNet / test GEN only. This is **not** a court, judge, arbitrator, or legal damages award. Validators compare two visual artifacts against a priced inventory and return which **line ids** are chargeable. The contract then pays a sum that cannot drift from those ids.
+Studio-dev / test GEN only. This is **not** a court, judge, arbitrator, or legal damages award. Validators compare two visual artifacts against a priced inventory and return which **line ids** are chargeable. The contract then pays a sum that cannot drift from those ids.
 
 ```
 owner_payout  = sum(max_charge_wei[id] for id in triggered)
