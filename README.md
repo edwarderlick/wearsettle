@@ -136,8 +136,9 @@ Canonical live occupancy matching the updated source (constructor with `resolve_
 | Network | Studio-dev |
 | RPC | https://studio-dev.genlayer.com/api |
 | Chain ID | 61997 |
-| Contract | `0x86034B3290a9e3bAC0650B6A1BC5289e8a3E63d6` |
-| Deploy tx | `0xbc2099db4bad0468e6b811a1c4697b92d6cc80dca173fedd0bce3414d456775d` |
+| Explorer | https://explorer-studio-dev.genlayer.com |
+| Contract | [`0x86034B3290a9e3bAC0650B6A1BC5289e8a3E63d6`](https://explorer-studio-dev.genlayer.com/address/0x86034B3290a9e3bAC0650B6A1BC5289e8a3E63d6) |
+| Deploy tx | [`0xbc2099db4bad0468e6b811a1c4697b92d6cc80dca173fedd0bce3414d456775d`](https://explorer-studio-dev.genlayer.com/tx/0xbc2099db4bad0468e6b811a1c4697b92d6cc80dca173fedd0bce3414d456775d) |
 
 ## StudioNet (chain 61999) - Legacy
 
